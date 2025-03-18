@@ -1,141 +1,161 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { handleLogout } from '../auth/logout';
-import AppSideBar from '../components/AppSideBar';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore"
-
+import React, { useState } from 'react';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [counts, setCounts] = useState({
-    missing: 0,
-    wandering: 0,
-    found: 0,
-    adoptionApplication: 0,
-    rescue: 0,
-    adopted: 0,
+  const [records, setRecords] = useState([
+    { id: 1, course: "Introduction to Programming", type: "Core", price: "₱100", date: "March 1, 2025" },
+    { id: 2, course: "Web Development Fundamentals", type: "Elective", price: "₱120", date: "March 8, 2025" },
+  ]);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCourse, setNewCourse] = useState({
+    course: "",
+    type: "",
+    price: "",
+    date: "",
   });
-  const [adoptionStats, setAdoptionStats] = useState({});
-  const [rescueStats, setRescueStats] = useState({});
 
-  useEffect(() => {
-    toast.success("Welcome back, Admin!");
-    
-    const fetchCounts = async () => {
-      try {
-        const collections = [
-          "missing",
-          "wandering",
-          "found",
-          "adoptionApplication",
-          "rescue",
-          "adopted",
-        ];
-        const countsData = {};
+  const filteredRecords = records.filter((record) =>
+    Object.values(record).some((value) =>
+      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
-        await Promise.all(
-          collections.map(async (col) => {
-            const snapshot = await getDocs(collection(db, col));
-            countsData[col] = snapshot.size || 0;
-          })
-        );
+  const handleDelete = (id) => {
+    setRecords(records.filter((record) => record.id !== id));
+  };
 
-        setCounts(countsData);
-      } catch (error) {
-        console.error("Error fetching counts:", error);
-      }
-    };
+  const handleAddCourse = () => {
+    if (
+      newCourse.course.trim() &&
+      newCourse.type.trim() &&
+      newCourse.price.trim() &&
+      newCourse.date.trim()
+    ) {
+      setRecords([
+        ...records,
+        { ...newCourse, id: records.length + 1 }, // Assigning unique ID
+      ]);
+      setNewCourse({ course: "", type: "", price: "", date: "" }); // Resetting form
+      setIsModalOpen(false); // Closing modal
+    }
+  };
 
-    const fetchStatusCounts = async (colName, fieldName, setState) => {
-      try {
-        const snapshot = await getDocs(collection(db, colName));
-        const statusCounts = {};
-
-        snapshot.docs.forEach((doc) => {
-          const status = doc.data()[fieldName];
-          statusCounts[status] = (statusCounts[status] || 0) + 1;
-        });
-
-        setState(statusCounts);
-      } catch (error) {
-        console.error(`Error fetching ${colName} stats:`, error);
-      }
-    };
-
-    fetchCounts();
-    fetchStatusCounts("adoptionApplication", "applicationStatus", setAdoptionStats);
-    fetchStatusCounts("rescue", "reportStatus", setRescueStats);
-  }, []);
-  
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <AppSideBar />
+    <div className="flex items-center justify-center p-4">
+      <div className="w-full max-w-5xl bg-white shadow-lg rounded-lg p-6">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Course Dashboard</h1>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
-          <button
-            onClick={() => handleLogout(navigate)}
-            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-300"
-          >
-            Logout
-          </button>
-        </header>
+        {/* Search Bar */}
+        <input
+          type="text"
+          placeholder="Search courses..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="mb-4 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
 
-        {/* Main Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Card 1: Quick Stats */}
-            {Object.entries(counts).map(([key, value]) => (
-              <div key={key} className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold text-gray-700">{key.replace(/([A-Z])/g, " $1")}</h2>
-                <p className="text-3xl font-bold text-gray-900">{value}</p>
-              </div>
-            ))}
+        {/* Add Course Button */}
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          Add Course
+        </button>
 
-          </div>
-
-          {/* Additional Content */}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Orders</h2>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto text-left border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="px-4 py-2 border border-gray-300">Course</th>
+                <th className="px-4 py-2 border border-gray-300">Type</th>
+                <th className="px-4 py-2 border border-gray-300">Price</th>
+                <th className="px-4 py-2 border border-gray-300">Date</th>
+                <th className="px-4 py-2 border border-gray-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecords.length > 0 ? (
+                filteredRecords.map((record) => (
+                  <tr key={record.id} className="odd:bg-white even:bg-gray-100">
+                    <td className="px-4 py-2 border border-gray-300">{record.course}</td>
+                    <td className="px-4 py-2 border border-gray-300">{record.type}</td>
+                    <td className="px-4 py-2 border border-gray-300">{record.price}</td>
+                    <td className="px-4 py-2 border border-gray-300">{record.date}</td>
+                    <td className="px-4 py-2 border border-gray-300">
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="px-3 py-1 bg-red-500 text-white text-sm rounded-md hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 text-sm text-gray-900">#1234</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">John Doe</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">Shipped</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">$120.00</td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 text-sm text-gray-900">#1235</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">Jane Smith</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">Processing</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">$95.00</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center px-4 py-2 text-gray-500 border border-gray-300">
+                    No courses found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} />
+      {/* Add Course Modal */}
+      {isModalOpen && (
+        <div style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }} className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Add New Course</h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Course Name"
+                value={newCourse.course}
+                onChange={(e) => setNewCourse({ ...newCourse, course: e.target.value })}
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Type (e.g., Core/Elective)"
+                value={newCourse.type}
+                onChange={(e) => setNewCourse({ ...newCourse, type: e.target.value })}
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Price"
+                value={newCourse.price}
+                onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="date"
+                value={newCourse.date}
+                onChange={(e) => setNewCourse({ ...newCourse, date: e.target.value })}
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddCourse}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Add Course
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
