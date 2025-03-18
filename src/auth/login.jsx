@@ -5,16 +5,19 @@ import "react-toastify/dist/ReactToastify.css";
 import logo from "../assets/images/logo.png";
 
 const Login = () => {
-  const [isRegistering, setIsRegistering] = useState(false); 
+  const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState(""); 
-  const [lastName, setLastName] = useState(""); 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "admin") {
+    if (
+      (username === "admin" || username === "test@gmail.com") &&
+      password === "admin"
+    ) {
       toast.success("Logged in successfully!");
       navigate("/dashboard");
     } else {
@@ -26,14 +29,14 @@ const Login = () => {
     e.preventDefault();
     if (username && password && firstName && lastName) {
       toast.success("Registration successful! Please log in.");
-      setIsRegistering(false); 
+      setIsRegistering(false);
     } else {
       toast.error("Please fill in all fields.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
         <div className="text-center mb-6">
           <img src={logo} alt="Logo" className="w-20 h-20 mx-auto mb-4" />
@@ -86,7 +89,7 @@ const Login = () => {
               htmlFor="username"
               className="block text-sm font-medium text-gray-700"
             >
-              Username
+              Username or Email
             </label>
             <input
               type="text"
